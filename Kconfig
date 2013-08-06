@@ -1,0 +1,5 @@
+config SECURITY_BOBULSM
+	bool "BOBULSM"
+	depends on SECURITY
+	select NETWORK_SECMARK
+	default n
