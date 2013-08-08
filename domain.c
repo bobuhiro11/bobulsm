@@ -1,29 +1,4 @@
-/*
-#include<stdio.h>
-#include<string.h>
-#include<stdlib.h>
-#include<unistd.h>
-#include<fcntl.h>
- */
 #include "common.h"
-
-/* make tree from policy file '/etc/security/bobulsm.policy'
- *
- * each line of policy file end newline
- * ./makepolicy < policyfile
- *
- *             #
- *             # This is policy file
- *             #
- *             
- *             *bobuhiro11lsm
- *             **bobuhiro11lsm.tar
- *             ***hoge.tar
- *             **bobulsm
- *             **bobulsm.tar
- *             ***b.s &end&
- *
- */
 
 struct domain *domain_root = NULL;
 
@@ -228,36 +203,3 @@ struct domain *check_domain_trans(struct domain *domain, char *filename)
 	}
 	return NULL;
 }
-
-/*
-   void test(void)
-   {
-   char buf[BUFLEN];
-   struct domain *p;
-   int size;
-   FILE *fp;
-   char *pp;
-
-   fp = fopen("a.dat","r");
-
-   while(fgets(buf,BUFLEN,fp)){
-   pp = buf + strlen(buf) -1;
- *pp = '\0';
- printf("<%s>\n",buf);
- p = read_domain(buf,strlen(buf)+1);
- }
- show_domain(domain_root);
- }
-
- int main(void)
- {
- char buf[BUFLEN];
- int size;
-
- mtrace();
- test();
- muntrace();
-
- return 0;
- }
- */
