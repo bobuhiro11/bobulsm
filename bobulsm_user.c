@@ -1,6 +1,7 @@
 /*
  *  NOTICE:
- *              This is User mode program.
+ *              This is user mode program.
+ *              All program file use absolute path.
  *  Usage:  
  *              ./bobulsm_user  first_program login_shell_program
  *
@@ -10,6 +11,7 @@
  */
 
 #include<stdio.h>
+#include<stdlib.h>
 #include<string.h>
 #include<sys/stat.h>
 #include<fcntl.h>
@@ -24,7 +26,7 @@
  * analyze filename program and its child program
  *
  */
-void analyze(FILE **wfp, char *filename, int depth)
+void analyze(FILE **wfp, const char *filename, int depth, const char *shell)
 {
 	FILE *rfp;
 	char buf[BUFLEN];
@@ -35,7 +37,12 @@ void analyze(FILE **wfp, char *filename, int depth)
 	for(i=0;i<depth;i++)
 		buf[i] = '*';
 	buf[i] = '\0';
+	if(depth>2 && !strcmp(filename,shell)){
+		fprintf(*wfp,"%s%s%s\n",buf,filename,"&end&");
+		return;
+	}
 	fprintf(*wfp,"%s%s\n",buf,filename);
+
 
 	/* analyze child file */
 	if(!(rfp = fopen(filename,"r"))){
@@ -53,7 +60,7 @@ void analyze(FILE **wfp, char *filename, int depth)
 				q = p;
 				while(*q!=' ' && *q!='0') q++;
 				*q = '\0';
-				analyze(wfp,p,depth+1);
+				analyze(wfp,p,depth+1,shell);
 				p = q;
 			}
 			p++;
@@ -88,7 +95,7 @@ int main(int argc, char **argv)
 	/* analyze program file */
 	if(argc == 3){
 		if(wfp = fopen(CONF_FILE,"w")){
-			analyze(&wfp,argv[1],1);
+			analyze(&wfp,argv[1],1,argv[2]);
 			fclose(wfp);
 		}else{
 			fprintf(stderr,"bobulsm_user: Failure to open \"%s\".\n",CONF_FILE);
