@@ -82,7 +82,6 @@ struct domain {
 /********** Function Prototype **********/
 
 /* bobulsm.c*/
-int bobulsm_inode_mkdir(struct inode *inode, struct dentry *dentry,umode_t mask);
 int bobulsm_bprm_set_creds(struct linux_binprm *bprm);
 int bobulsm_bprm_check_security(struct linux_binprm *bprm);
 int bobulsm_cred_alloc_blank(struct cred *new, gfp_t gfp);

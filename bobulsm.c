@@ -18,7 +18,6 @@ struct file_operations bobulsm_file_ops = {
  */ 
 struct security_operations bobulsm_ops = {
 	.name                = "bobulsm",
-	.inode_mkdir         = bobulsm_inode_mkdir,
 	.bprm_set_creds      = bobulsm_bprm_set_creds,
 	.bprm_check_security = bobulsm_bprm_check_security,
 	.cred_alloc_blank    = bobulsm_cred_alloc_blank,
@@ -102,7 +101,7 @@ ssize_t write_policy(struct file *filep,const char __user *buf,
 		tmp[rc-1] = '\0';
 	else	
 		tmp[rc] = '\0';
-	printk("bobulsm: policy contained \"%s\"\n",tmp);
+	//printk("bobulsm: policy contained \"%s\"\n",tmp);
 	
 	p = write_domain(tmp, count);
 	if(p)
@@ -110,18 +109,6 @@ ssize_t write_policy(struct file *filep,const char __user *buf,
 	else
 		printk("bobulsm: Occurred an error at write_domain\n");
 	return rc;
-}
-	
-/*
- * lsm hook for inode_mkdir
- */ 
-int bobulsm_inode_mkdir(struct inode *inode, struct dentry *dentry,
-			   umode_t mask)
-{
-	//printk("bobulsm: inode_mkdir called.\n");
-
-  	/* Return 0 if permission is granted. */
-	return 0;
 }
 
 /*
@@ -173,20 +160,7 @@ int bobulsm_bprm_set_creds(struct linux_binprm *bprm)
 
 	if (bprm->cred_prepared)
 		return 0;
-	/*
-	if(strstr(bprm->filename,"bobu")){
-		printk("bobulsm_bprm_set_creds: bprm->filename \"%s\"\n",
-			bprm->filename);
-		if(bprm->cred->security)
-			printk("bobulsm_bprm_set_creds: bprm->cred->security->flag \"%d\"\n",
-				((struct domain*)bprm->cred->security)->flag);
-		else
-			printk("bobulsm_bprm_set_creds: bprm->cred->security is NULL\n");
-	}
-	*/
 
-  	/* Return 0 if permission is granted. */
-	// debug
 	bprm->cred->security = NULL;
 	return rc;
 }
@@ -250,10 +224,6 @@ int __init bobulsm_init(void)
 		panic("bobulsm: Occurred an error at register_security(&bobulsm_ops).\n");
 	else
 		printk("bobulsm: registered surely.\n");
-
-	/*
-	cred->security = &domain1;
-	*/
 
 	return 0;
 }
