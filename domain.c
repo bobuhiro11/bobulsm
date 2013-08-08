@@ -21,7 +21,7 @@
  *             ***hoge.tar
  *             **bobulsm
  *             **bobulsm.tar
- *             ***b.s %end%
+ *             ***b.s &end&
  *
  */
 
@@ -89,10 +89,10 @@ struct domain *alloc_domain(struct domain *parent, char *filename, int flag)
 
 	/* root domain */
 	if(!parent){
-		domain_root = kmalloc(sizeof(struct domain), GFP_KERNEL);
+		domain_root = kmalloc(sizeof(struct domain), GFP_NOFS);
 		if(!domain_root)
 			return NULL;
-		domain_root->filename = kmalloc(buflen, GFP_KERNEL);
+		domain_root->filename = kmalloc(buflen, GFP_NOFS);
 		if(!domain_root->filename)
 			return NULL;
 		strcpy(domain_root->filename,filename);
@@ -105,23 +105,23 @@ struct domain *alloc_domain(struct domain *parent, char *filename, int flag)
 
 	if(!parent->list){
 		/* first child */
-		p = parent->list = kmalloc(sizeof(struct domain_list), GFP_KERNEL); 
+		p = parent->list = kmalloc(sizeof(struct domain_list), GFP_NOFS); 
 	}else{
 		/* 2,3, ... child */
 		p = parent->list;
 		while(p->next)
 			p = p->next;
-		p = p->next = kmalloc(sizeof(struct domain_list), GFP_KERNEL);
+		p = p->next = kmalloc(sizeof(struct domain_list), GFP_NOFS);
 	}
 
 	if(!p)
 		return NULL;
 
 	p->next = NULL;
-	dp = p->domain = kmalloc(sizeof(struct domain), GFP_KERNEL);
+	dp = p->domain = kmalloc(sizeof(struct domain), GFP_NOFS);
 	if(!dp)
 		return NULL;
-	dp->filename = kmalloc(buflen, GFP_KERNEL);
+	dp->filename = kmalloc(buflen, GFP_NOFS);
 	if(!dp->filename)
 		return NULL;
 	strcpy(dp->filename,filename);
@@ -164,6 +164,8 @@ void show_domain(struct domain *domain)
 /*
  * read each line of policy_file and make domain
  * buf is pure string ('\0' end) and not contain CR and LF
+ * 
+ * return domain if success, NULL otherwise
  */
 struct domain *write_domain(char *buf, int buflen)
 {
@@ -196,7 +198,7 @@ struct domain *write_domain(char *buf, int buflen)
 	}
 
 	j = 1;
-	if(p = strstr(&buf[i],"\%end\%")){
+	if(p = strstr(&buf[i],"&end&")){
 		*p = '\0';
 		j = 0;
 	}
@@ -205,6 +207,26 @@ struct domain *write_domain(char *buf, int buflen)
 	n = i;
 
 	return d;
+}
+
+/*
+ * check domain transion
+ * 
+ * return new domain if given permission
+ * NULL otherwise
+ */
+struct domain *check_domain_trans(struct domain *domain, char *filename)
+{
+	struct domain_list *p;
+	
+	p = domain->list;
+	while(p){
+		if(!strcmp(p->domain->filename,filename)){
+			return p->domain;
+		}
+		p = p->next;
+	}
+	return NULL;
 }
 
 /*

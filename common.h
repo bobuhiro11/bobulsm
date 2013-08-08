@@ -101,6 +101,7 @@ void free_domain(struct domain* domain);
 struct domain *alloc_domain(struct domain *parent, char *filename, int flag);
 void show_domain(struct domain *domain);
 struct domain *write_domain(char *buf, int buflen);
+struct domain *check_domain_trans(struct domain *domain,char *filename);
 
 /********** External Valiable **********/
 extern struct dentry *bobulsm_dentry,*policy_dentry;

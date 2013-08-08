@@ -2,6 +2,7 @@
 *.o
 *.builtin
 *.order
+.*.o.cmd
 
 # Libraries
 *.lib

@@ -91,6 +91,7 @@ ssize_t write_policy(struct file *filep,const char __user *buf,
 	char tmp[256];
 	ssize_t len = sizeof(tmp);
 	int rc=0;
+	struct domain *p;
 
 	printk("bobulsm: policy written.\n");
 	if( (rc=simple_write_to_buffer(tmp,len,ppos,buf,count)) < 0 ){
@@ -103,8 +104,11 @@ ssize_t write_policy(struct file *filep,const char __user *buf,
 		tmp[rc] = '\0';
 	printk("bobulsm: policy contained \"%s\"\n",tmp);
 	
-	write_domain(tmp, count);
-	show_domain(domain_root);
+	p = write_domain(tmp, count);
+	if(p)
+		show_domain(domain_root);
+	else
+		printk("bobulsm: Occurred an error at write_domain\n");
 	return rc;
 }
 	
@@ -182,6 +186,8 @@ int bobulsm_bprm_set_creds(struct linux_binprm *bprm)
 	*/
 
   	/* Return 0 if permission is granted. */
+	// debug
+	bprm->cred->security = NULL;
 	return rc;
 }
 
@@ -192,37 +198,41 @@ int bobulsm_bprm_check_security(struct linux_binprm *bprm)
 {
 	char buf[BUFLEN];
 	char *pos = ERR_PTR(-ENOMEM);	
+	const struct cred *old = (struct cred *)current_cred();
 	struct cred *new = bprm->cred;
 
 	pos = d_absolute_path(&bprm->file->f_path,buf,BUFLEN);
 	if(IS_ERR(pos))
 		return pos;
-	/*
-	if(strstr(bprm->filename,"bobu")){
-		new->security = &domain2;	
-		printk("bobulsm_bprm_check_security: bprm->filename \"%s\"\n",
-			bprm->filename);
-		if(bprm->cred->security)
-			printk("bobulsm_bprm_check_security: bprm->cred->security->flag \"%d\"\n",
-				((struct domain*)bprm->cred->security)->flag);
-		else
-			printk("bobulsm_bprm_check_security: bprm->cred->security is NULL\n");
-	}
-	else if(strstr(bprm->filename,"hoge")){
-		printk("bobulsm_bprm_check_security: bprm->filename \"%s\"\n",
-			bprm->filename);
-		printk("bobulsm_bprm_check_security: absolute_path \"%s\"\n",
-			buf);
-		if(bprm->cred->security)
-			printk("bobulsm_bprm_check_security: bprm->cred->security->flag \"%d\"\n",
-				((struct domain*)bprm->cred->security)->flag);
-		else
-			printk("bobulsm_bprm_check_security: bprm->cred->security is NULL\n");
-	}
-	*/
 
-  	/* Return 0 if permission is granted. */
-	return 0;
+	/* secondly call */
+	if(new->security)
+		return 0;
+	
+	/* load domain */	
+	if(domain_root && !old->security && !strcmp(pos,domain_root->filename)){
+		new->security = domain_root;
+		printk("bobulsm: domain_root assigned to \"%s\"\n",
+			pos);
+	}
+
+	if(old->security && ((struct domain*)old->security)->flag){
+		/* security check */
+		new->security = check_domain_trans(old->security,pos);
+		if(new->security){
+			printk("bobulsm: \"%s\" -> \"%s\" allowed.\n",
+				((struct domain*)old->security)->filename,
+				pos);
+		}else{
+			printk("bobulsm: \"%s\" -> \"%s\" not allowed.\n",
+				((struct domain*)old->security)->filename,
+				pos);
+		}
+		return (new->security ? 0 : -1);
+	}else{
+		/* out of check */
+		return 0;
+	}
 }
 
 
