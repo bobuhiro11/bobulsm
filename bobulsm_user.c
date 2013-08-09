@@ -19,6 +19,7 @@
 #define CONF_DIR  "/etc/bobulsm"
 #define CONF_FILE "/etc/bobulsm/policy"
 #define POLICY    "/sys/kernel/security/bobulsm/policy"
+#define SSHD	  "/usr/sbin/sshd"
 #define EXEC	  "exec"
 #define BUFLEN    512
 
@@ -50,7 +51,10 @@ void analyze(FILE **wfp, const char *filename, int depth, const char *shell)
 	}
 	while(fgets(buf,BUFLEN,rfp)){
 		size = strlen(buf)-1;
-		buf[size] = '\0';
+		if(size>=0)
+			buf[size] = '\0';
+		else
+			buf[0] = '\0';
 		
 		p = buf;
 		while(*p){
@@ -83,6 +87,14 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
+	/* mount /sys */
+	if(lstat("/sys/kernel/security",&st))
+		mount("/sys","/sys","sysfs",0,NULL);
+	/* mount /sys/kernel/security */
+	if(lstat("/sys/kernel/security/bobulsm",&st))
+		mount("none","/sys/kernel/security","securityfs",0,NULL);
+		
+
 	/* make CONF_DIR directory*/
 	if(stat(CONF_DIR,&st)){
 		if(mkdir(CONF_DIR,0755)){
@@ -95,7 +107,9 @@ int main(int argc, char **argv)
 	/* analyze program file */
 	if(argc == 3){
 		if(wfp = fopen(CONF_FILE,"w")){
-			analyze(&wfp,argv[1],1,argv[2]);
+			fprintf(wfp,"*%s\n",SSHD);
+			fprintf(wfp,"**%s\n",argv[2]);
+			analyze(&wfp,argv[1],3,argv[2]);
 			fclose(wfp);
 		}else{
 			fprintf(stderr,"bobulsm_user: Failure to open \"%s\".\n",CONF_FILE);

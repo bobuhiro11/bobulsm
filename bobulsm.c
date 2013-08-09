@@ -26,10 +26,40 @@ struct security_operations bobulsm_ops = {
 	.cred_free           = bobulsm_cred_free,
 };
 
+/*
+ * load policy from "/etc/bobulsm/policy" using "/sbin/bobulsm_user"
+ */
+void bobulsm_load_policy(void)
+{
+	char *argv[2];
+	char *envp[1];
+	
+	argv[0] = BOBULSM_USER;
+	argv[1] = NULL;
+	envp[0] = NULL;
+	
+	call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
+}
+
+/*
+ * check whether BOBULSM_USER exist or not.
+ * return true if BOBUSLM_USER exist, false otherwise
+ */
+bool bobulsm_policy_user_exist(void)
+{
+	struct path path;
+	if(kern_path(BOBULSM_USER,LOOKUP_FOLLOW,&path)){
+		return false;
+	}
+	path_put(&path);
+	return true;
+}
 
 /*
  * make securityfs and policy file
  * /sys/kernel/security/bobulsm/policy
+ *
+ * return 0 if success
  */
 int bobulsm_securityfs_init(void)
 {
@@ -97,7 +127,7 @@ ssize_t write_policy(struct file *filep,const char __user *buf,
 		printk("bobulsm:  Occurred an error at write_policy.\n");
 		return rc;
 	}
-	if(buf[rc-1] == '\n')
+	if(rc>=1 && tmp[rc-1] == '\n')
 		tmp[rc-1] = '\0';
 	else	
 		tmp[rc] = '\0';
@@ -160,6 +190,16 @@ int bobulsm_bprm_set_creds(struct linux_binprm *bprm)
 
 	if (bprm->cred_prepared)
 		return 0;
+	
+	if (!domain_root && !strcmp(bprm->filename,"/sbin/init")){
+		if(bobulsm_policy_user_exist()){
+			bobulsm_load_policy();
+			printk("bobulsm: load policy using \"%s\".\n",BOBULSM_USER);
+			show_domain(domain_root);
+		}else{
+			printk("bobulsm: can't find \"%s\".\n",BOBULSM_USER);
+		}
+	}
 
 	bprm->cred->security = NULL;
 	return rc;

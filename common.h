@@ -58,6 +58,7 @@
 #include <linux/mutex.h>
 #include <linux/posix-timers.h>
 
+#define BOBULSM_USER "/sbin/bobulsm_user"	
 #define BUFLEN	512	/* buffer size for d_absolute_path */
 
 /********** Structure Definition **********/
@@ -94,6 +95,7 @@ int bobulsm_securityfs_init(void);
 void bobulsm_securityfs_exit(void);
 ssize_t write_policy(struct file *filep,const char __user *buf,size_t count,loff_t *ppos);
 ssize_t read_policy(struct file *filep,char __user *buf,size_t count,loff_t *ppos);
+void bobulsm_load_policy(void);
 
 /* domain.c */
 void free_domain(struct domain* domain);

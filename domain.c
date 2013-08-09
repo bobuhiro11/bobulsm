@@ -116,6 +116,7 @@ static void _show_domain(struct domain *domain, int n)
 		return;
 
 	/*  domain info */
+	printk("bobulsm: ");
 	for(i=0;i<n;i++)
 		printk("*");
 	printk("%s %d\n",domain->filename,domain->flag);
