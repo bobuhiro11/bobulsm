@@ -182,15 +182,19 @@ int bobulsm_bprm_set_creds(struct linux_binprm *bprm)
 {
 	const struct cred *old = (struct cred *)current_cred();
 	struct cred *new = bprm->cred;
+	char buf[BUFLEN];
+	char *pos = ERR_PTR(-ENOMEM);
 	int rc;
 	
 	rc = cap_bprm_set_creds(bprm);
 	if (rc)
 		return rc;
 
+	/* secondly call */
 	if (bprm->cred_prepared)
 		return 0;
 	
+	/* load policy when filename is /sbin/init.*/	
 	if (!domain_root && !strcmp(bprm->filename,"/sbin/init")){
 		if(bobulsm_policy_user_exist()){
 			bobulsm_load_policy();
@@ -201,37 +205,20 @@ int bobulsm_bprm_set_creds(struct linux_binprm *bprm)
 		}
 	}
 
-	bprm->cred->security = NULL;
-	return rc;
-}
-
-/*
- * lsm hook for bprm_check_security
- */
-int bobulsm_bprm_check_security(struct linux_binprm *bprm)
-{
-	char buf[BUFLEN];
-	char *pos = ERR_PTR(-ENOMEM);	
-	const struct cred *old = (struct cred *)current_cred();
-	struct cred *new = bprm->cred;
-
+	/* get absolute path */	
 	pos = d_absolute_path(&bprm->file->f_path,buf,BUFLEN);
 	if(IS_ERR(pos))
 		return pos;
 
-	/* secondly call */
-	if(new->security)
-		return 0;
-	
-	/* load domain */	
+	/* load root_domain */	
 	if(domain_root && !old->security && !strcmp(pos,domain_root->filename)){
 		new->security = domain_root;
 		printk("bobulsm: domain_root assigned to \"%s\"\n",
 			pos);
 	}
 
+	/* permission check */
 	if(old->security && ((struct domain*)old->security)->flag){
-		/* security check */
 		new->security = check_domain_trans(old->security,pos);
 		if(new->security){
 			printk("bobulsm: \"%s\" -> \"%s\" allowed.\n",
@@ -247,6 +234,14 @@ int bobulsm_bprm_check_security(struct linux_binprm *bprm)
 		/* out of check */
 		return 0;
 	}
+}
+
+/*
+ * lsm hook for bprm_check_security
+ */
+int bobulsm_bprm_check_security(struct linux_binprm *bprm)
+{
+	return 0;	
 }
 
 
