@@ -1,5 +1,94 @@
 #include "common.h"
 
+int bobulsm_file_fcntl(struct file *file,unsigned int cmd, unsigned long arg)
+{
+#if 0
+	char *pos;
+	char buf[BUFLEN];
+	struct cred *cred = current_cred();
+
+	/* get absolute path */	
+	pos = d_absolute_path(&file->f_path,buf,BUFLEN);
+	if(IS_ERR(pos))
+		return pos;
+
+	printk("bobulsm: file_fcntl %d %s\n",
+		file->f_flags,
+		pos);
+
+	/* permission for self */
+	if(cred->security && ((struct domain*)cred->security)->flag 
+		&& !strcmp(pos,((struct domain*)cred->security)->filename)){
+		printk("bobulsm: this is oneself fcntl. %d %s\n",
+			file->f_flags,
+			pos);
+		return 0;
+	}
+
+
+	/* execve permission check */
+	if( (file->f_flags && (O_RDONLY || O_LARGEFILE)) && cred->security && ((struct domain*)cred->security)->flag){
+		if(check_domain_trans(cred->security,pos)){
+			printk("bobulsm: flag:%d \"%s\" -> \"%s\" fcntl allowed.\n",
+				file->f_flags,
+				((struct domain*)cred->security)->filename,
+				pos);
+		}else{
+			printk("bobulsm: flag:%d \"%s\" -> \"%s\" fcntl not allowed.\n",
+				file->f_flags,
+				((struct domain*)cred->security)->filename,
+				pos);
+		}
+	}
+#endif
+	return 0;
+}
+
+int bobulsm_file_open(struct file *file, const struct cred *cred)
+{
+	char *pos;
+	char buf[BUFLEN];
+
+	if(current->in_execve)
+		return 0;
+
+	/* get absolute path */	
+	pos = d_absolute_path(&file->f_path,buf,BUFLEN);
+	if(IS_ERR(pos))
+		return pos;
+
+	printk("bobulsm: file_open %d %s\n",
+		file->f_flags,
+		pos);
+
+	/* permission for self */
+	if(cred->security && ((struct domain*)cred->security)->flag 
+		&& !strcmp(pos,((struct domain*)cred->security)->filename)){
+		printk("bobulsm: this is oneself. %d %s\n",
+			file->f_flags,
+			pos);
+		return 0;
+	}
+
+
+	/* execve permission check */
+	if( (file->f_flags && (O_RDONLY || O_LARGEFILE)) && cred->security && ((struct domain*)cred->security)->flag){
+		if(check_domain_trans(cred->security,pos)){
+			printk("bobulsm: flag:%d \"%s\" -> \"%s\" open allowed.\n",
+				file->f_flags,
+				((struct domain*)cred->security)->filename,
+				pos);
+		}else{
+			printk("bobulsm: flag:%d \"%s\" -> \"%s\" open not allowed.\n",
+				file->f_flags,
+				((struct domain*)cred->security)->filename,
+				pos);
+			return -1;
+		}
+	}
+	return 0;
+}
+
 /*
  * dentry of /sys/kernel/security/bobulsm/policy
  */
@@ -20,6 +109,8 @@ struct security_operations bobulsm_ops = {
 	.name                = "bobulsm",
 	.bprm_set_creds      = bobulsm_bprm_set_creds,
 	.bprm_check_security = bobulsm_bprm_check_security,
+	.file_open           = bobulsm_file_open,
+	.file_fcntl          = bobulsm_file_fcntl,
 	.cred_alloc_blank    = bobulsm_cred_alloc_blank,
 	.cred_prepare        = bobulsm_cred_prepare,
 	.cred_transfer       = bobulsm_cred_transfer,
