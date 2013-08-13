@@ -14,6 +14,7 @@
 #include<stdlib.h>
 #include<string.h>
 #include<sys/stat.h>
+#include<sys/types.h>
 #include<fcntl.h>
 
 #define CONF_DIR  "/etc/bobulsm"
@@ -103,6 +104,17 @@ int main(int argc, char **argv)
 			exit(1);
 		}
 	}
+
+        /* make CONF_FILE */
+        if(stat(CONF_FILE,&st)){
+                if(wfp = fopen(CONF_FILE,"w")){
+                        fclose(wfp);
+                }else{
+			fprintf(stderr,"bobulsm_user: Failure to make \"%s\".\n",CONF_FILE);
+			exit(1);
+                }
+        }
+
 
 	/* analyze program file */
 	if(argc == 3){
