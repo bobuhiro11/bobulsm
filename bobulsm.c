@@ -46,6 +46,7 @@ int bobulsm_file_fcntl(struct file *file,unsigned int cmd, unsigned long arg)
 
 int bobulsm_file_open(struct file *file, const struct cred *cred)
 {
+#if 0
 	char *pos;
 	char buf[BUFLEN];
 
@@ -83,9 +84,10 @@ int bobulsm_file_open(struct file *file, const struct cred *cred)
 				file->f_flags,
 				((struct domain*)cred->security)->filename,
 				pos);
-			return -1;
+			return -EPERM;
 		}
 	}
+#endif
 	return 0;
 }
 
@@ -101,6 +103,7 @@ struct file_operations bobulsm_file_ops = {
 	.read  = read_policy,
 	.write = write_policy,
 };
+
 
 /*
  * operations of lsm hooks
@@ -214,7 +217,7 @@ ssize_t write_policy(struct file *filep,const char __user *buf,
 	struct domain *p;
 
 	printk("bobulsm: policy written.\n");
-	if( (rc=simple_write_to_buffer(tmp,len,ppos,buf,count)) < 0 ){
+	if( (rc=simple_write_to_buffer(tmp,len-1,ppos,buf,count)) < 0 ){
 		printk("bobulsm:  Occurred an error at write_policy.\n");
 		return rc;
 	}
@@ -278,8 +281,10 @@ int bobulsm_bprm_set_creds(struct linux_binprm *bprm)
 	int rc;
 	
 	rc = cap_bprm_set_creds(bprm);
-	if (rc)
+	if (rc){
+                printk("cap not found\n");
 		return rc;
+        }
 
 	/* secondly call */
 	if (bprm->cred_prepared)
@@ -298,8 +303,10 @@ int bobulsm_bprm_set_creds(struct linux_binprm *bprm)
 
 	/* get absolute path */	
 	pos = d_absolute_path(&bprm->file->f_path,buf,BUFLEN);
-	if(IS_ERR(pos))
+	if(IS_ERR(pos)){
+                printk(KERN_INFO "bobulsm: path not found.\n");
 		return pos;
+        }
 
 	/* load root_domain */	
 	if(domain_root && !old->security && !strcmp(pos,domain_root->filename)){
@@ -315,12 +322,16 @@ int bobulsm_bprm_set_creds(struct linux_binprm *bprm)
 			printk("bobulsm: \"%s\" -> \"%s\" allowed.\n",
 				((struct domain*)old->security)->filename,
 				pos);
+                        if(!((struct domain*)new->security)->flag){
+                                printk("bobulsm: \"%s\" lsm finished.\n",
+                                pos);
+                        }
 		}else{
 			printk("bobulsm: \"%s\" -> \"%s\" not allowed.\n",
 				((struct domain*)old->security)->filename,
 				pos);
 		}
-		return (new->security ? 0 : -1);
+		return (new->security ? 0 : -EPERM);
 	}else{
 		/* out of check */
 		return 0;

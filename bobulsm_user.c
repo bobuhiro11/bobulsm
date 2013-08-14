@@ -25,6 +25,14 @@
 #define BUFLEN    512
 
 /*
+ * get absolute path 
+ * return 0 if success
+ *             negative value otherwise. 
+ */
+int absolute_path(char *buf, char *pwd){
+}
+
+/*
  * analyze filename program and its child program
  *
  */
@@ -120,8 +128,13 @@ int main(int argc, char **argv)
 	if(argc == 3){
 		if(wfp = fopen(CONF_FILE,"w")){
 			fprintf(wfp,"*%s\n",SSHD);
-			fprintf(wfp,"**%s\n",argv[2]);
-			analyze(&wfp,argv[1],3,argv[2]);
+			fprintf(wfp,"**%s\n",SSHD);
+			fprintf(wfp,"***%s\n",argv[2]);  /* login shell  */
+                        fprintf(wfp,"****%s\n", "/usr/bin/id");
+                        fprintf(wfp,"****%s\n", "/usr/bin/dircolors");
+                        fprintf(wfp,"****%s\n", "/usr/bin/clear_console");
+                        fprintf(wfp,"****%s\n", "/usr/lib/openssh/sftp-server");
+			analyze(&wfp,argv[1],4,argv[2]);
 			fclose(wfp);
 		}else{
 			fprintf(stderr,"bobulsm_user: Failure to open \"%s\".\n",CONF_FILE);
