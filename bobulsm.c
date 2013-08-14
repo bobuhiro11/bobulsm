@@ -148,7 +148,7 @@ ssize_t write_policy(struct file *filep,const char __user *buf,
         if(tmp[0] >= '0' && tmp[0] <= '9'){
                 domain_num = simple_strtol(tmp, &endp, 10);
                 printk("bobulsm: set domain_num = %d\n", domain_num);
-                return;
+                return rc;
         }
 
 	p = write_domain(tmp, count, &domain_roots[domain_num]);
