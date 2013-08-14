@@ -2,92 +2,11 @@
 
 int bobulsm_file_fcntl(struct file *file,unsigned int cmd, unsigned long arg)
 {
-#if 0
-	char *pos;
-	char buf[BUFLEN];
-	struct cred *cred = current_cred();
-
-	/* get absolute path */	
-	pos = d_absolute_path(&file->f_path,buf,BUFLEN);
-	if(IS_ERR(pos))
-		return pos;
-
-	printk("bobulsm: file_fcntl %d %s\n",
-		file->f_flags,
-		pos);
-
-	/* permission for self */
-	if(cred->security && ((struct domain*)cred->security)->flag 
-		&& !strcmp(pos,((struct domain*)cred->security)->filename)){
-		printk("bobulsm: this is oneself fcntl. %d %s\n",
-			file->f_flags,
-			pos);
-		return 0;
-	}
-
-
-	/* execve permission check */
-	if( (file->f_flags && (O_RDONLY || O_LARGEFILE)) && cred->security && ((struct domain*)cred->security)->flag){
-		if(check_domain_trans(cred->security,pos)){
-			printk("bobulsm: flag:%d \"%s\" -> \"%s\" fcntl allowed.\n",
-				file->f_flags,
-				((struct domain*)cred->security)->filename,
-				pos);
-		}else{
-			printk("bobulsm: flag:%d \"%s\" -> \"%s\" fcntl not allowed.\n",
-				file->f_flags,
-				((struct domain*)cred->security)->filename,
-				pos);
-		}
-	}
-#endif
 	return 0;
 }
 
 int bobulsm_file_open(struct file *file, const struct cred *cred)
 {
-#if 0
-	char *pos;
-	char buf[BUFLEN];
-
-	if(current->in_execve)
-		return 0;
-
-	/* get absolute path */	
-	pos = d_absolute_path(&file->f_path,buf,BUFLEN);
-	if(IS_ERR(pos))
-		return pos;
-
-	printk("bobulsm: file_open %d %s\n",
-		file->f_flags,
-		pos);
-
-	/* permission for self */
-	if(cred->security && ((struct domain*)cred->security)->flag 
-		&& !strcmp(pos,((struct domain*)cred->security)->filename)){
-		printk("bobulsm: this is oneself. %d %s\n",
-			file->f_flags,
-			pos);
-		return 0;
-	}
-
-
-	/* execve permission check */
-	if( (file->f_flags && (O_RDONLY || O_LARGEFILE)) && cred->security && ((struct domain*)cred->security)->flag){
-		if(check_domain_trans(cred->security,pos)){
-			printk("bobulsm: flag:%d \"%s\" -> \"%s\" open allowed.\n",
-				file->f_flags,
-				((struct domain*)cred->security)->filename,
-				pos);
-		}else{
-			printk("bobulsm: flag:%d \"%s\" -> \"%s\" open not allowed.\n",
-				file->f_flags,
-				((struct domain*)cred->security)->filename,
-				pos);
-			return -EPERM;
-		}
-	}
-#endif
 	return 0;
 }
 
@@ -103,7 +22,6 @@ struct file_operations bobulsm_file_ops = {
 	.read  = read_policy,
 	.write = write_policy,
 };
-
 
 /*
  * operations of lsm hooks
@@ -210,11 +128,12 @@ ssize_t read_policy(struct file *filep,char __user *buf,
 ssize_t write_policy(struct file *filep,const char __user *buf,
 	size_t count,loff_t *ppos) 
 {
-
+        static int domain_num = 0;      /* domain number  0...MAX_TREE_SIZE */
 	char tmp[256];
 	ssize_t len = sizeof(tmp);
 	int rc=0;
 	struct domain *p;
+        char *endp;
 
 	printk("bobulsm: policy written.\n");
 	if( (rc=simple_write_to_buffer(tmp,len-1,ppos,buf,count)) < 0 ){
@@ -225,13 +144,21 @@ ssize_t write_policy(struct file *filep,const char __user *buf,
 		tmp[rc-1] = '\0';
 	else	
 		tmp[rc] = '\0';
-	//printk("bobulsm: policy contained \"%s\"\n",tmp);
-	
-	p = write_domain(tmp, count);
-	if(p)
-		show_domain(domain_root);
-	else
+        
+        if(tmp[0] >= '0' && tmp[0] <= '9'){
+                domain_num = simple_strtol(tmp, &endp, 10);
+                printk("bobulsm: set domain_num = %d\n", domain_num);
+                return;
+        }
+
+	p = write_domain(tmp, count, &domain_roots[domain_num]);
+
+	if(p){
+                printk("bobulsm: policy %d\n",domain_num);
+		show_domain(domain_roots[domain_num]);
+        }else{
 		printk("bobulsm: Occurred an error at write_domain\n");
+        }
 	return rc;
 }
 
@@ -278,7 +205,7 @@ int bobulsm_bprm_set_creds(struct linux_binprm *bprm)
 	struct cred *new = bprm->cred;
 	char buf[BUFLEN];
 	char *pos = ERR_PTR(-ENOMEM);
-	int rc;
+	int rc,i;
 	
 	rc = cap_bprm_set_creds(bprm);
 	if (rc){
@@ -291,11 +218,15 @@ int bobulsm_bprm_set_creds(struct linux_binprm *bprm)
 		return 0;
 	
 	/* load policy when filename is /sbin/init.*/	
-	if (!domain_root && !strcmp(bprm->filename,"/sbin/init")){
+	if (!domain_roots[0] && !strcmp(bprm->filename,"/sbin/init")){
 		if(bobulsm_policy_user_exist()){
 			bobulsm_load_policy();
 			printk("bobulsm: load policy using \"%s\".\n",BOBULSM_USER);
-			show_domain(domain_root);
+                        for(i=0;i<DOMAIN_TREE_SIZE;i++)
+                                if(domain_roots[i]){
+                                        printk("bobulsm: policy %d\n",i);
+			                show_domain(domain_roots[i]);
+                                }
 		}else{
 			printk("bobulsm: can't find \"%s\".\n",BOBULSM_USER);
 		}
@@ -309,11 +240,14 @@ int bobulsm_bprm_set_creds(struct linux_binprm *bprm)
         }
 
 	/* load root_domain */	
-	if(domain_root && !old->security && !strcmp(pos,domain_root->filename)){
-		new->security = domain_root;
-		printk("bobulsm: domain_root assigned to \"%s\"\n",
-			pos);
-	}
+        for(i=0;i<DOMAIN_TREE_SIZE;i++){
+                if(domain_roots[i] && !old->security && !strcmp(pos,domain_roots[i]->filename)){
+                        new->security = domain_roots[i];
+                        printk("bobulsm: domain_roots[%d] assigned to \"%s\"\n",
+                                        i,pos);
+                        break;
+                }
+        }
 
 	/* permission check */
 	if(old->security && ((struct domain*)old->security)->flag){
@@ -352,7 +286,7 @@ int __init bobulsm_init(void)
 	int rc = 0;
 	struct cred *cred = (struct cred *) current_cred();
 
-	if (! security_module_enable(&bobulsm_ops)){
+	if (!security_module_enable(&bobulsm_ops)){
 		printk("bobulsm: did not selected.\n");
 		return 0;
 	}

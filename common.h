@@ -29,6 +29,7 @@
 #include <linux/netfilter_ipv4.h>
 #include <linux/netfilter_ipv6.h>
 #include <linux/tty.h>
+#include <linux/ctype.h>
 #include <net/icmp.h>
 #include <net/ip.h>	
 #include <net/tcp.h>
@@ -58,8 +59,9 @@
 #include <linux/mutex.h>
 #include <linux/posix-timers.h>
 
-#define BOBULSM_USER "/sbin/bobulsm_user"	
-#define BUFLEN	512	/* buffer size for d_absolute_path */
+#define BOBULSM_USER "/sbin/bobulsm_user"	/* user mode program */
+#define BUFLEN	512	                        /* buffer size for d_absolute_path */
+#define DOMAIN_TREE_SIZE 10                     /* max of trees's */
 
 /********** Structure Definition **********/
 
@@ -98,16 +100,17 @@ ssize_t read_policy(struct file *filep,char __user *buf,size_t count,loff_t *ppo
 void bobulsm_load_policy(void);
 
 /* domain.c */
-void free_domain(struct domain* domain);
-struct domain *alloc_domain(struct domain *parent, char *filename, int flag);
+void free_domain(struct domain *domain, struct domain **domain_root);
+struct domain *alloc_domain(struct domain *parent, char *filename, int flag, 
+                struct domain **domain);
 void show_domain(struct domain *domain);
-struct domain *write_domain(char *buf, int buflen);
+struct domain *write_domain(char *buf, int buflen, struct domain **domain);
 struct domain *check_domain_trans(struct domain *domain,char *filename);
 
 /********** External Valiable **********/
 extern struct dentry *bobulsm_dentry,*policy_dentry;
 extern struct file_operations bobulsm_file_ops;
 extern struct security_operations bobulsm_ops;
-extern struct domain *domain_root;
+extern struct domain *domain_roots[];
 
 #endif	/* #ifndef _SECURITY_BOBULSM_COMMON_H  */

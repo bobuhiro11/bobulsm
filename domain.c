@@ -1,11 +1,14 @@
 #include "common.h"
 
-struct domain *domain_root = NULL;
+struct domain *domain_roots[DOMAIN_TREE_SIZE] = {0};
 
 /*
  * free domain and ALL child domain
+ *
+ * @domain:      domain you want to free
+ * @domain_root: domain_root
  */
-void free_domain(struct domain *domain)
+void free_domain(struct domain *domain, struct domain **domain_root)
 {
 	struct domain *parent;
 	struct domain_list *p,*t;
@@ -16,15 +19,15 @@ void free_domain(struct domain *domain)
 	while(p = domain->list){
 		domain->list = p->next;
 		p->domain->parent = NULL;
-		free_domain(p->domain);
+		free_domain(p->domain, domain_root);
 		kfree(p);
 	}
 
 	/* root domain */
-	if(domain_root == domain){
+	if(*domain_root == domain){
 		kfree(domain->filename);
 		kfree(domain);
-		domain_root = NULL;
+		*domain_root = NULL;
 		return;
 	}
 
@@ -54,9 +57,15 @@ void free_domain(struct domain *domain)
 /*
  *  add new domain to parent domain tree as **DIRECT CHILD**
  *
+ *  @parent:      parent domain
+ *  @filename:    file path 
+ *  @flag:        1 if you want to MAC, 0 otherwise
+ *  @domain_root: domain root
+ *
  *  return new domain if success , NULL otherwise
  */
-struct domain *alloc_domain(struct domain *parent, char *filename, int flag)
+struct domain *alloc_domain(struct domain *parent, char *filename, int flag, 
+                struct domain **domain_root)
 {
 	struct domain_list *p;
 	struct domain* dp;
@@ -64,17 +73,17 @@ struct domain *alloc_domain(struct domain *parent, char *filename, int flag)
 
 	/* root domain */
 	if(!parent){
-		domain_root = kmalloc(sizeof(struct domain), GFP_NOFS);
-		if(!domain_root)
+		*domain_root = kmalloc(sizeof(struct domain), GFP_NOFS);
+		if(!*domain_root)
 			return NULL;
-		domain_root->filename = kmalloc(buflen, GFP_NOFS);
-		if(!domain_root->filename)
+		(*domain_root)->filename = kmalloc(buflen, GFP_NOFS);
+		if(!(*domain_root)->filename)
 			return NULL;
-		strcpy(domain_root->filename,filename);
-		domain_root->flag = flag;
-		domain_root->list = NULL;
-		domain_root->parent = NULL;
-		return domain_root;
+		strcpy((*domain_root)->filename,filename);
+		(*domain_root)->flag = flag;
+		(*domain_root)->list = NULL;
+		(*domain_root)->parent = NULL;
+		return (*domain_root);
 	}  
 
 
@@ -106,7 +115,9 @@ struct domain *alloc_domain(struct domain *parent, char *filename, int flag)
 	return dp; 
 }
 
-
+/*
+ * show domain  and all child domain
+ */
 static void _show_domain(struct domain *domain, int n)
 {
 	int i;
@@ -140,10 +151,14 @@ void show_domain(struct domain *domain)
 /*
  * read each line of policy_file and make domain
  * buf is pure string ('\0' end) and not contain CR and LF
+ *
+ * @buf:
+ * @buflen:      
+ * @domain_root: domain root
  * 
  * return domain if success, NULL otherwise
  */
-struct domain *write_domain(char *buf, int buflen)
+struct domain *write_domain(char *buf, int buflen, struct domain **domain_root)
 {
 	static int n = 0;                     /* depth of previous domain   */
 	static struct domain *d = NULL;       /* address of previous domain */
@@ -179,7 +194,7 @@ struct domain *write_domain(char *buf, int buflen)
 		j = 0;
 	}
 
-	d = alloc_domain(d,&buf[i],j);
+	d = alloc_domain(d,&buf[i],j,domain_root);
 	n = i;
 
 	return d;

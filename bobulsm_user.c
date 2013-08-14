@@ -127,6 +127,7 @@ int main(int argc, char **argv)
 	/* analyze program file */
 	if(argc == 3){
 		if(wfp = fopen(CONF_FILE,"w")){
+                        fprintf(wfp,"1\n");
 			fprintf(wfp,"*%s\n",SSHD);
 			fprintf(wfp,"**%s\n",SSHD);
 			fprintf(wfp,"***%s\n",argv[2]);  /* login shell  */
