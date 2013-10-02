@@ -1,0 +1,38 @@
+F root
+F |-- app
+F |   |-- assets
+F |   |   |-- images
+F |   |   |-- javascripts
+F |   |   `-- stylesheets
+F |   |-- controllers
+F |   |-- helpers
+F |   |-- mailers
+F |   |-- models
+F |   `-- views
+F |       `-- layouts
+F |-- config
+F |   |-- environments
+F |   |-- initializers
+F |   `-- locales
+F |-- db
+F |-- doc
+F |-- lib
+F |   |-- assets
+F |   `-- tasks
+F |-- log
+F |-- public
+F |-- script
+F |-- test
+F |   |-- fixtures
+F |   |-- functional
+F |   |-- integration
+F |   |-- performance
+F |   `-- unit
+F |-- tmp
+F |   `-- cache
+F |       `-- assets
+F `-- vendor
+F     |-- assets
+F     |   |-- javascripts
+F     |   `-- stylesheets
+F     `-- plugins
