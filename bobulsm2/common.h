@@ -10,6 +10,7 @@
 #define BOBULSM_STUDY 	'S'	
 #define BOBULSM_FREE 	'F'
 
+#define DOMAIN_ERROR 	((struct domain*)(-1))
 
 /********** Structure Definition **********/
 
@@ -43,6 +44,8 @@ struct domain *alloc_new_domain(struct domain *parent);
 struct domain *update_domain(struct domain *domain, char *filename, char flag);
 void free_all_domain(struct domain *root);
 void free_all_domain_tree();
+struct domain *translate_domain(struct domain *domain, char *filename);
+struct domain *check_child(struct domain *domain, char *filename);
 
 /********** External Valiable **********/
 

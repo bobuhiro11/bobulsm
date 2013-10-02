@@ -1,3 +1,19 @@
+/*
+ * domain infomation is stored security field of sturuct cred
+ * and accessed from bprm_set_creds() hook.
+ * domain status is as below.
+ *
+ * ENFORCE mode:
+ * 	domain->flag = BOBULSM_ENFORCE
+ *
+ * STUDY mode:
+ * 	domain->flag = BOBULSM_STUDY
+ *
+ * FREE mode:
+ * 	domain->flag = BOBULSM_FREE
+ * 	domain = NULL
+ */
+
 #include "common.h"
 
 
@@ -142,4 +158,74 @@ void free_all_domain_tree()
 		p = q;
 	}
 	trees = NULL;
+}
+
+/*
+ * translate domain and alloc new child. 
+ * called from bprm_set_creds() hook.
+ *
+ * @domain: domain
+ *
+ * return 
+ * new domain if success, 
+ * NULL if new domain is BOBULSM_FREE
+ * DOMAIN_ERROR if ban domain trans
+ */
+struct domain *translate_domain(struct domain *domain, char *filename)
+{
+	struct domain *p;
+	struct domain_tree *t;
+
+	if(!domain || domain->flag == BOBULSM_FREE){
+		/* FREE mode */
+		t = trees;			// alloc new tree
+		while(t){
+			if(!strcmp(t->root->filename,filename)){
+				return t->root;
+			}
+			t = t->next;
+		}
+		return NULL;
+
+	}else if(domain->flag == BOBULSM_ENFORCE){
+		/* ENFORCE mode */
+		p = check_child(domain, filename);
+		return (p ? p : DOMAIN_ERROR);
+
+	}else if(domain->flag == BOBULSM_STUDY){
+		/* STUDY mode */
+		p = check_child(domain, filename);
+		if(!p){
+			p = alloc_new_domain(domain);
+			if(!p)
+				return DOMAIN_ERROR;
+			update_domain(p, filename, BOBULSM_STUDY);
+		}
+		return p;
+
+	}else{
+		return DOMAIN_ERROR;
+	}
+}
+
+/*
+ * check whether domain has "filename" child.
+ *
+ * @domain: domain
+ *
+ * return child domain if success, NULL otherwise
+ */
+struct domain *check_child(struct domain *domain, char *filename)
+{
+	struct domain_list *p;
+	struct domain *q;
+
+	p = domain->list;
+	while(p){
+		q = p->domain;
+		if(!strcmp(q->filename,filename))
+			return q;
+		p = p->next;
+	}
+	return NULL;
 }
