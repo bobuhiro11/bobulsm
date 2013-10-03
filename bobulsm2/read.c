@@ -21,6 +21,7 @@
  */
 #include<stdio.h>
 #include<string.h>
+#include<stdlib.h>
 
 #define FILENAME "data2.dat"
 #define BUFSIZE  256
@@ -40,8 +41,8 @@ void parse(void)
 	unsigned int flag = 0x00000000;	// appear
 
 	if(!(rfp = fopen(FILENAME,"r"))){
-		printf("file not found.\n");
-		return;
+		fprintf(stderr, "file \"%s\" can't open.\n", FILENAME);
+		exit(EXIT_FAILURE);
 	}
 
 	i = 0;
@@ -49,9 +50,16 @@ void parse(void)
 
 
 	n = i;
+	i--;
 	while(i>=0){
 		buf = bufs[i];
 		depth = buf[2] - '0';		
+
+		if( strlen(buf) + depth*4 > BUFSIZE) {
+			fprintf(stderr, "buffer error.\n");
+			exit(EXIT_FAILURE);
+		}
+
 		sprintf(tmp, "%c ", buf[0]);
 		for(j=1;j<depth;j++){
 			if( (flag>>j)  & 0x00000001){
