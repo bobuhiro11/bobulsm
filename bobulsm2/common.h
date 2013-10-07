@@ -10,6 +10,8 @@
 #define BOBULSM_STUDY 	'S'	
 #define BOBULSM_FREE 	'F'
 
+#define BUFSIZE 512
+
 #define DOMAIN_ERROR 	((struct domain*)(-1))
 
 /********** Structure Definition **********/
@@ -46,6 +48,7 @@ void free_all_domain(struct domain *root);
 void free_all_domain_tree();
 struct domain *translate_domain(struct domain *domain, char *filename);
 struct domain *check_child(struct domain *domain, char *filename);
+void write_domain(char *buf);
 
 /********** External Valiable **********/
 

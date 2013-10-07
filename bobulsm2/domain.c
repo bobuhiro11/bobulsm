@@ -82,7 +82,7 @@ struct domain *alloc_new_domain(struct domain *parent)
 			p = parent->list;
 		}else{
 			/* 2,3... child */
-			for(p=parent->list; p->next; p->next) ;
+			for(p=parent->list; p->next;p=p->next) ;
 
 			if(!(p->next=(struct domain_list*)malloc(sizeof(struct domain_list))))
 				return NULL;
@@ -228,4 +228,57 @@ struct domain *check_child(struct domain *domain, char *filename)
 		p = p->next;
 	}
 	return NULL;
+}
+
+/*
+ * domain write interface 
+ *
+ * @buf: normarized string 'FLAG DEPTH PATH\0', or 'reset'
+ */
+void write_domain(char *buf)
+{
+	char flag;
+	int depth, i;
+	char path[BUFSIZE];
+	struct domain* p;
+
+	static struct domain *pre_domain = NULL;
+	static int pre_depth = 0;
+
+	/* reset all domain tree */
+	if(strstr(buf,"reset")==buf){
+		free_all_domain_tree();
+
+		pre_domain = NULL;
+		pre_depth = 0;
+		return;
+	}
+	
+	sscanf(buf, "%c%d%s", &flag, &depth, path);
+
+	/* root domain */
+	if(depth == 0){
+		p = alloc_new_domain(NULL);
+		update_domain(p,path,flag);
+
+		pre_domain = p;
+		pre_depth = 0;
+		return;
+	}
+
+	/* leaf domain*/
+	else{
+		if(depth <= pre_depth){
+			i = pre_depth - depth + 1;
+			while(i--)
+				pre_domain = pre_domain->parent;
+		}
+
+		p = alloc_new_domain(pre_domain);
+		update_domain(p,path,flag);
+
+		pre_domain = p;
+		pre_depth = depth;
+		return;
+	}
 }

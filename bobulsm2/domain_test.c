@@ -40,6 +40,9 @@ void test1()
 	d2 = alloc_new_domain(d1);
 	update_domain(d2,"bar", BOBULSM_STUDY);
 
+	d2 = alloc_new_domain(d1);
+	update_domain(d2,"baz", BOBULSM_STUDY);
+
 
 
 	d1 = alloc_new_domain(NULL);
@@ -62,42 +65,6 @@ void test1()
 	d2 = alloc_new_domain(d1);
 	update_domain(d2,"bar3", BOBULSM_STUDY);
 
-
-	dump_trees();
-	free_all_domain_tree();
-
-	/********************************************************/
-
-	d1 = alloc_new_domain(NULL);
-	update_domain(d1,"hogehoge",BOBULSM_ENFORCE);
-
-	d2 = alloc_new_domain(d1);
-	update_domain(d2,"foo", BOBULSM_STUDY);
-
-	d2 = alloc_new_domain(d1);
-	update_domain(d2,"bar", BOBULSM_STUDY);
-
-
-
-	d1 = alloc_new_domain(NULL);
-	update_domain(d1,"hogehoge2",BOBULSM_ENFORCE);
-
-	d2 = alloc_new_domain(d1);
-	update_domain(d2,"foo2", BOBULSM_STUDY);
-
-	d2 = alloc_new_domain(d1);
-	update_domain(d2,"bar2", BOBULSM_STUDY);
-
-
-
-	d1 = alloc_new_domain(NULL);
-	update_domain(d1,"hogehoge3",BOBULSM_ENFORCE);
-
-	d2 = alloc_new_domain(d1);
-	update_domain(d2,"foo3", BOBULSM_STUDY);
-
-	d2 = alloc_new_domain(d1);
-	update_domain(d2,"bar3", BOBULSM_STUDY);
 
 	dump_trees();
 	free_all_domain_tree();
@@ -158,9 +125,58 @@ void test3()
 	free_all_domain_tree();
 }
 
+/*
+ * test write_domain()
+ */
+void test4()
+{
+	write_domain("reset");
+	write_domain("F 0 root");
+	write_domain("F 1 app");
+	write_domain("F 2 assets");
+	write_domain("F 3 images");
+	write_domain("F 3 javascripts");
+	write_domain("F 3 stylesheets");
+	write_domain("F 2 controllers");
+	write_domain("F 2 helpers");
+	write_domain("F 2 mailers");
+	write_domain("F 2 models");
+	write_domain("F 2 views");
+	write_domain("F 3 layouts");
+	write_domain("F 1 config");
+	write_domain("F 2 environments");
+	write_domain("F 2 initializers");
+	write_domain("F 2 locales");
+	write_domain("F 1 db");
+	write_domain("F 1 doc");
+	write_domain("F 1 lib");
+	write_domain("F 2 assets");
+	write_domain("F 2 tasks");
+	write_domain("F 1 log");
+	write_domain("F 1 public");
+	write_domain("F 1 script");
+	write_domain("F 1 test");
+	write_domain("F 2 fixtures");
+	write_domain("F 2 functional");
+	write_domain("F 2 integration");
+	write_domain("F 2 performance");
+	write_domain("F 2 unit");
+	write_domain("F 1 tmp");
+	write_domain("F 2 cache");
+	write_domain("F 3 assets");
+	write_domain("F 1 vendor");
+	write_domain("F 2 assets");
+	write_domain("F 3 javascripts");
+	write_domain("F 3 stylesheets");
+	write_domain("F 2 plugins");
+
+	printf("write_domain test.\n");
+	dump_trees();
+}
+
 
 int main(void)
 {
-	test3();
+	test4();
 	return 0;
 }
